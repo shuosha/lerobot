@@ -205,6 +205,8 @@ class DiffusionModel(nn.Module):
         global_cond: Tensor | None = None,
         generator: torch.Generator | None = None,
         noise: Tensor | None = None,
+        ref_action: Tensor | None = None,  # (B, A)
+        grad_scale: float = 0.0,
     ) -> Tensor:
         device = get_device_from_parameters(self)
         dtype = get_dtype_from_parameters(self)
@@ -223,6 +225,10 @@ class DiffusionModel(nn.Module):
 
         self.noise_scheduler.set_timesteps(self.num_inference_steps)
 
+        use_guide = (ref_action is not None) and (grad_scale > 0.0)
+        if use_guide:
+            ref = ref_action.to(device=sample.device, dtype=sample.dtype)[:, None, :]  # (B,1,A) broadcast over T
+
         for t in self.noise_scheduler.timesteps:
             # Predict model output.
             model_output = self.unet(
@@ -230,6 +236,12 @@ class DiffusionModel(nn.Module):
                 torch.full(sample.shape[:1], t, dtype=torch.long, device=sample.device),
                 global_cond=global_cond,
             )
+            if use_guide:
+                with torch.enable_grad():
+                    x = sample.detach().requires_grad_(True)                 # (B,T,A)
+                    dist = (x - ref).pow(2).sum(dim=(-1, -2)).mean()         # scalar
+                    grad = torch.autograd.grad(dist, x)[0]
+                    sample = (x - grad_scale * grad).detach()
             # Compute previous image: x_t -> x_t-1
             sample = self.noise_scheduler.step(model_output, t, sample, generator=generator).prev_sample
 
