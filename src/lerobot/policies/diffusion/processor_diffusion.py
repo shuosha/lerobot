@@ -31,6 +31,26 @@ from lerobot.processor import (
 from lerobot.processor.converters import policy_action_to_transition, transition_to_policy_action
 from lerobot.utils.constants import POLICY_POSTPROCESSOR_DEFAULT_NAME, POLICY_PREPROCESSOR_DEFAULT_NAME
 
+def make_action_normalizer(
+    config: DiffusionConfig,
+    dataset_stats: dict[str, dict[str, torch.Tensor]] | None = None,
+) -> tuple[
+    PolicyProcessorPipeline[PolicyAction, PolicyAction],
+]:
+    ref_action_steps = [
+        NormalizerProcessorStep(
+            features=config.output_features, norm_map=config.normalization_mapping, stats=dataset_stats
+        )
+    ]
+        
+    normalizer = PolicyProcessorPipeline[PolicyAction, PolicyAction](
+        steps=ref_action_steps,
+        name="ref_action_processor",
+        to_transition=policy_action_to_transition,
+        to_output=transition_to_policy_action,
+    )
+
+    return normalizer
 
 def make_diffusion_pre_post_processors(
     config: DiffusionConfig,
