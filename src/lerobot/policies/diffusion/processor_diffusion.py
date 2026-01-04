@@ -33,10 +33,32 @@ from lerobot.utils.constants import POLICY_POSTPROCESSOR_DEFAULT_NAME, POLICY_PR
 
 def make_action_normalizer(
     config: DiffusionConfig,
+    pretrained_path: str | None = None,
     dataset_stats: dict[str, dict[str, torch.Tensor]] | None = None,
 ) -> tuple[
     PolicyProcessorPipeline[PolicyAction, PolicyAction],
 ]:
+    """Create or load an action normalizer for the diffusion policy.
+    
+    Args:
+        config: The diffusion policy configuration.
+        pretrained_path: Optional path to load the normalizer from a pretrained checkpoint.
+            If provided, the normalization stats are loaded from the saved state files.
+        dataset_stats: Dataset statistics for normalization. Only used if pretrained_path is not provided.
+    
+    Returns:
+        A PolicyProcessorPipeline that normalizes reference actions.
+    """
+    if pretrained_path:
+        # Load normalizer from pretrained checkpoint (stats are loaded from saved state files)
+        return PolicyProcessorPipeline.from_pretrained(
+            pretrained_model_name_or_path=pretrained_path,
+            config_filename="ref_action_processor.json",
+            to_transition=policy_action_to_transition,
+            to_output=transition_to_policy_action,
+        )
+    
+    # Create a new normalizer with provided dataset_stats
     ref_action_steps = [
         NormalizerProcessorStep(
             features=config.output_features, norm_map=config.normalization_mapping, stats=dataset_stats

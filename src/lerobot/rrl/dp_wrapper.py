@@ -18,7 +18,6 @@ from typing import Any, Dict, Optional
 import torch
 from torch import Tensor
 
-from lerobot.datasets.lerobot_dataset import LeRobotDatasetMetadata
 from lerobot.policies.diffusion.modeling_diffusion import DiffusionPolicy
 from lerobot.policies.diffusion.processor_diffusion import make_action_normalizer
 from lerobot.policies.factory import make_pre_post_processors
@@ -61,11 +60,10 @@ class DPWrapper:
     """
 
     def __init__(self, model_id: str, device: Optional[str] = None):
-        # Load dataset metadata to provide normalization stats to the processors
+        # Load training config to get policy horizon
         training_cfg = os.path.join(model_id, "train_config.json")
         with open(training_cfg, "r") as f:
             train_config = json.load(f)
-        dataset_metadata = LeRobotDatasetMetadata(train_config["dataset"]["repo_id"])
 
         # Load the pretrained diffusion policy
         self.policy: DiffusionPolicy = DiffusionPolicy.from_pretrained(model_id)
@@ -76,16 +74,16 @@ class DPWrapper:
         self.policy.to(self.device)
         self.policy.eval()
 
-        # Create / load pre and post processors. We instruct processors to use our device.
+        # Create / load pre and post processors. Normalization stats are loaded from the checkpoint.
         self.preprocessor, self.postprocessor = make_pre_post_processors(
             self.policy.config,
             pretrained_path=model_id,
-            dataset_stats=dataset_metadata.stats,
         )
 
+        # Load the reference action normalizer from checkpoint (stats are already embedded)
         self.ref_action_processor = make_action_normalizer(
             config=self.policy.config,
-            dataset_stats=dataset_metadata.stats,
+            pretrained_path=model_id,
         )
 
         self.chunk_size = train_config["policy"]["horizon"]
