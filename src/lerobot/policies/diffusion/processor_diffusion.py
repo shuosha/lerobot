@@ -53,7 +53,7 @@ def make_action_normalizer(
         # Load normalizer from pretrained checkpoint (stats are loaded from saved state files)
         return PolicyProcessorPipeline.from_pretrained(
             pretrained_model_name_or_path=pretrained_path,
-            config_filename="ref_action_processor.json",
+            config_filename="policy_preprocessor.json",
             to_transition=policy_action_to_transition,
             to_output=transition_to_policy_action,
         )
