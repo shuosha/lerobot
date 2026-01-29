@@ -125,8 +125,8 @@
         "drop_n_last_frames": 7,
         "vision_backbone": "resnet18",
         "crop_shape": [
-            180,
-            180
+            190,
+            190
         ],
         "crop_is_random": true,
         "pretrained_backbone_weights": null,
@@ -168,12 +168,12 @@
     "seed": 1000,
     "num_workers": 4,
     "batch_size": 512,
-    "steps": 6000,
+    "steps": 40000,
     "eval_freq": 2000,
     "log_freq": 200,
     "tolerance_s": 0.0001,
     "save_checkpoint": true,
-    "save_freq": 100,
+    "save_freq": 5000,
     "use_policy_training_preset": true,
     "optimizer": {
         "type": "adam",
