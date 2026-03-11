@@ -205,7 +205,7 @@ class DiffusionModel(nn.Module):
         generator: torch.Generator | None = None,
         noise: Tensor | None = None,
         ref_action: Tensor | None = None,  # (B, A)
-        grad_scale: float = 0.01,
+        grad_scale: float = 0.05,
     ) -> Tensor:
         device = get_device_from_parameters(self)
         dtype = get_dtype_from_parameters(self)
